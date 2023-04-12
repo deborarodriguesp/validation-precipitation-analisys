@@ -14,7 +14,7 @@ name = [];
  for k=1:length(files_ana)
 
     filename_ANA =[projectdir1 '\' files_ana(k).name];
-    ana{k}= load ([filename_ANA]);
+    ana{k}= load (filename_ANA);
     name {k}= files_ana(k).name;
 end
  
@@ -29,17 +29,17 @@ files=dir([projectdir1 '\*.txt']);
  end
 
 %% Data trateament 
-Pyear= [];
-
 for k = 1:32
 %% First I am checking if the dataset follows the rules. 
 % Does start and end at the right times? If yes, analize. 
 % Real Results (hourly results)
 
     ini = find(ana{k}==2010,1);
-    fin = find(ana{k}==2022,1);
+    %fin = find(ana{k}==2022,1);
     
-    a = ana{k} (ini:end,1:5);
+    a = ana{k} (ini:end,1:5); 
+    % you can use fin here instead of end
+    % example: a = ana{k} (ini:fin-1,2);
 
     first = datetime(2010,01,01,0,0,0); 
     last = datetime(2021,12,31,23,59,59);
@@ -53,15 +53,35 @@ for k = 1:32
     p= retime(P,'daily',@sum);%'sum'
     p= timetable2table(p);
     
-% precipitation daily results
+    % precipitation daily results
     a = table2array(p(:,6));
-% end activation
+    
 %% Removing higher values
     b= max(a);
     c = nanmean(a);
-    a(a > 1.000e+03) = c;
+    a(a > 1.000e+03) = b;
     clear ini fin x
-    
+%% activate for results with python script
+% the results are hourly, thus it is required to accumulate
+% for daily results
+
+%     Eini = find(era{k}(:,2)==2010,1);
+%     Efin = find(era{k}(:,2)==2022,1);
+%     p = era{k}(Eini:Efin-1,8);
+%     
+%     first = datetime(2010,01,01,0,0,0); 
+%     last = datetime(2021,12,31,23,59,59);
+%     x = (first:hours(1):last)';
+%     
+%     P = array2table(p,'VariableNames',{'RSP'});
+%     P= table2timetable(P,'RowTimes',x);
+%     p= retime(P,'daily', 'sum');%'sum'
+%     p= timetable2table(p);
+%     
+% % precipitation daily results
+%     p = table2array(p(:,2));
+% % end activation
+
 %% In case the Model results comes from matlab, use:     
 %Model results (daily results)
     p = merra{k}(:);  
@@ -86,7 +106,7 @@ for k = 1:32
 %https://www.mathworks.com/matlabcentral/answers/1793770-extract-all-data-for-the-june-months-over-the-years-from-a-timetable#answer_1040835
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
-tP.Properties.VariableNames={'Year','Month','Day','Rainfall','Model'};   % make meaningful variable name for data
+        tP.Properties.VariableNames={'Year','Month','Day','Rainfall','Model'};   % make meaningful variable name for data
         tG=groupsummary(tP,{'Month','Year'},"all","Rainfall");      % and do the work..
         tPnew = table2array(tP);
         
@@ -285,33 +305,37 @@ tP.Properties.VariableNames={'Year','Month','Day','Rainfall','Model'};   % make 
         end
         %%
         tDec=tG(tG.Month==12,:);
-            var = tDec(1:12,["Year","nummissing_Rainfall"])
+        var = tDec(1:12,["Year","nummissing_Rainfall"])
 
         if var.nummissing_Rainfall >=0
             idx_ano = find(var.nummissing_Rainfall >=11);
 
             var = table2array(var);
-            value_ano= var(idx_ano);                
+            value_ano= var(idx_ano);  
+            
             s= size(value_ano,1);
             value= num2cell(value_ano);
+            
             for i = 1:s
                 ano1{i}= find(tPnew(:,2)==12 & tPnew == value{1});
+                %%
                 tPnew(ano1{i},:) = [];
             end
+            
         end
         
         %% Finished to remove months with more than 11 days missing data
-        clear value var tJan tFev tMar tApr tMay tJun tAug tSep tOct tNov tDec  
-        
+        clear value var tJan tFev tMar tApr tMay tJun tJul tAug tSep tOct tNov tDec ano1 s value...
+            value_ano idx_ano i
         %% Joining Matrix
         %create a new time vector 
-        year = tPnew(:,1)
-        month = tPnew(:,2)
-        day = tPnew(:,3)
+        year = tPnew(:,1);
+        month = tPnew(:,2);
+        day = tPnew(:,3);
         dates = datenum([year,month,day]);
         
         %join the matrices
-        m= [dates tPnew(:,4:5)]
+        m= [dates tPnew(:,4:5)];
        
         %% Percentage of NaN in the matrix
         % you can use this at the begging or here or not use at all.  
@@ -327,7 +351,7 @@ tP.Properties.VariableNames={'Year','Month','Day','Rainfall','Model'};   % make 
         m(to_remove,:) = []; %remove consecutive NaNs.
         
         m = rmmissing(m);% remove consecutive NaNs.
-        clear to_remove start_idx end_idx
+        clear to_remove start_idx end_idx year month day first last dt c b
         
         %% Convert to timetable again
         % Here we convert again to use retime for month, annual and climate
@@ -340,28 +364,27 @@ tP.Properties.VariableNames={'Year','Month','Day','Rainfall','Model'};   % make 
         
         %% Daily 
         
-        dayest= m(:,2)
-        daymod= m(:,3)
+        estd= m(:,2);
+        modd= m(:,3);
         
         % Errors
-        RMSE = rmse(dayest,daymod);
-        r=rmse(dayest,daymod)
+        RMSE = rmse(estd,modd);
+                
+        N_S= NSE(estd,modd); 
+        r = corr(estd,modd); 
+        BIAS = sum(estd-modd)/sum(estd)*100;
         
-        N_S= NSE(dayest,daymod); 
-        r = corr(dayest,daymod); 
-        BIAS = sum(dayest-daymod)/sum(dayest)*100;
+        % wrong pbias:
+        %B = mean(estd) - mean(modd)/sum(estd)*100
+        %b = bias_skill(estd,modd)/sum(estd)*100
 
         %R2
-        lm = fitlm(dayest,daymod)
+        lm = fitlm(estd,modd);
         c= saveobj (lm);
-        rsq=c.Rsquared.Ordinary 
+        rsq=c.Rsquared.Ordinary;
 
         Derror{k}= [RMSE N_S r rsq BIAS T_Pct];
-        %T = array2table(a,'VariableNames',{'RMSE','NSE', 'r', 'rsq', 'BIAS'},...
-        %'RowNames',{'ERA5'})
-        
-        
-        
+               
         %% Montlhy
         
         Pest= retime(P(:,2),'monthly', 'sum');%'sum'
@@ -372,16 +395,16 @@ tP.Properties.VariableNames={'Year','Month','Day','Rainfall','Model'};   % make 
         x= timetable2table(Pm);
         tx= x(:,1);  x= table2array(x(:,2:3));
         x = rmmissing(x);
-        est=x(:,1); mod=x(:,2);
+        estm=x(:,1); modm=x(:,2);
 
         % Errors
-        RMSE = rmse(est,mod);
-        N_S= NSE(est,mod); 
-        r = corr(est,mod); 
-        BIAS = sum(est-mod)/sum(est)*100;
+        RMSE = rmse(estm,modm);
+        N_S= NSE(estm,modm); 
+        r = corr(estm,modm); 
+        BIAS = sum(estm-modm)/sum(estm)*100;
 
         %R2
-        lm = fitlm(est,mod);
+        lm = fitlm(estm,modm);
         c= saveobj (lm);
         rsq=c.Rsquared.Ordinary ;
 
@@ -419,52 +442,56 @@ tP.Properties.VariableNames={'Year','Month','Day','Rainfall','Model'};   % make 
         SATavg = groupsummary(Pm, 'Time', 'monthofyear','mean','RSP');
 
         est= ESTavg (:,3); 
-        sat= SATavg (:,3);
+        mod= SATavg (:,3);
         time=ESTavg (:,1);
-        P= [time est sat];
+        Pnc= [time est mod];
 
         d= datenum(2010,1:12,1);
         d=d';
 
-        est=table2array(est);
-        mod=table2array(sat);
+        estNC=table2array(est);
+        modNC=table2array(mod);
 
-        sumest= sum(est);
-        sumsat= sum(mod);
+        sumest= sum(estNC);
+        sumsat= sum(modNC);
         
         % Normal Climate errors
         
-        RMSE = rmse(est,mod);
-        N_S= NSE(est,mod); 
-        r = corr(est,mod); 
-        BIAS = (sum(est-mod)/sum(est))*100;
+        RMSE = rmse(estNC,modNC);
+        N_S= NSE(estNC,modNC); 
+        r = corr(estNC,modNC); 
+        BIAS = (sum(estNC-modNC)/sum(estNC))*100;
 
         %R2
-        lm = fitlm(est,mod);
+        lm = fitlm(estNC,modNC);
         c= saveobj (lm);
         rsq=c.Rsquared.Ordinary ;
 
         NCerror {k}= [RMSE N_S r rsq BIAS T_Pct];
         
+        %% Clear variables we don't need anymore
+        clear tP tPnew T T_Pct tG est mod ESTavg SATavg dates d PYest PYsat...
+            Pyear_sat Pyear_est P1 Pest Psat
     else     
         
     end
 end  
+
 %% write each time scale errors into txt
 Derror = Derror';
-Derror = [name Derror]
+Derror = [name Derror];
 writecell(Derror,'Derror.txt')
 
 Merror = Merror';
-Merror = [name Merror]
+Merror = [name Merror];
 writecell(Merror,'Merror.txt')
 
 Yerror=  Yerror';
-Yerror=  [name Yerror ]
+Yerror=  [name Yerror ];
 writecell(Yerror,'Yerror.txt')
 
 
 NCerror=  NCerror';
-NCerror=  [name NCerror]
+NCerror=  [name NCerror];
 writecell(NCerror,'NCerror.txt')
 
