@@ -300,7 +300,8 @@ tP.Properties.VariableNames={'Year','Month','Day','Rainfall','Model'};   % make 
             end
         end
         
-        % Finished to remove months with more than 11 days missing data
+        %% Finished to remove months with more than 11 days missing data
+        clear value var tJan tFev tMar tApr tMay tJun tAug tSep tOct tNov tDec  
         
         %% Joining Matrix
         %create a new time vector 
@@ -349,8 +350,6 @@ tP.Properties.VariableNames={'Year','Month','Day','Rainfall','Model'};   % make 
         N_S= NSE(dayest,daymod); 
         r = corr(dayest,daymod); 
         BIAS = sum(dayest-daymod)/sum(dayest)*100;
-        B = mean(dayest) - mean(daymod)/sum(dayest)*100
-        b = bias_skill(dayest,daymod)/sum(dayest)*100
 
         %R2
         lm = fitlm(dayest,daymod)
