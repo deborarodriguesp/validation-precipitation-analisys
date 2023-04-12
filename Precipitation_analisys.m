@@ -5,10 +5,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 clear all; close all; clc
-%% Data
-% don't need this block
-%t1 = datetime(2010,01,01,0,0,0); t2 = datetime(2021,12,31,23,59,59);
-%data = (t1:t2)';date = datenum(data);
 
 %% Load Observational
 projectdir1 = 'E:\METEOROLOGIA\MERRA\NewAnalisys_INMETdata\Precip_INMET';% observational data folder location
