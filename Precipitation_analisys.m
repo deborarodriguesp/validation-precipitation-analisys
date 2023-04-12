@@ -1,8 +1,16 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Developed by Débora Rodrigues
+%   LAPMAR (UFPA) and MARETEC (IST)
+%   Date: 12/04/2023
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 clear all; close all; clc
+
 %% Data
 % don't need this block
 %t1 = datetime(2010,01,01,0,0,0); t2 = datetime(2021,12,31,23,59,59);
 %data = (t1:t2)';date = datenum(data);
+
 %% Load Observational
 projectdir1 = 'E:\METEOROLOGIA\MERRA\NewAnalisys_INMETdata\Precip_INMET';% observational data folder location
 files_ana=dir([projectdir1 '\*.txt']);
@@ -58,27 +66,7 @@ for k = 1:32
     c = nanmean(a);
     a(a > 1.000e+03) = c;
     clear ini fin x
-%% activate for results with python script
-% the results are hourly, thus it is required to accumulate
-% for daily results
-
-%     Eini = find(era{k}(:,2)==2010,1);
-%     Efin = find(era{k}(:,2)==2022,1);
-%     p = era{k}(Eini:Efin-1,8);
-%     
-%     first = datetime(2010,01,01,0,0,0); 
-%     last = datetime(2021,12,31,23,59,59);
-%     x = (first:hours(1):last)';
-%     
-%     P = array2table(p,'VariableNames',{'RSP'});
-%     P= table2timetable(P,'RowTimes',x);
-%     p= retime(P,'daily', 'sum');%'sum'
-%     p= timetable2table(p);
-%     
-% % precipitation daily results
-%     p = table2array(p(:,2));
-% % end activation
-
+    
 %% In case the Model results comes from matlab, use:     
 %Model results (daily results)
     p = merra{k}(:);  
