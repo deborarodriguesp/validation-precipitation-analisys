@@ -5,7 +5,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 clear all; close all; clc
-
 %% Data
 % don't need this block
 %t1 = datetime(2010,01,01,0,0,0); t2 = datetime(2021,12,31,23,59,59);
